@@ -1,0 +1,18 @@
+[package]
+name = "ayan-player-cli"
+version = "0.1.0"
+edition = "2021"
+authors = ["Ayan Das"]
+description = "A simple CLI tool to play videos from the current directory."
+license = "MIT"
+repository = "https://github.com/AyanDas-99/rust-player-cli"
+keywords = ["cli", "tool", "example"]
+documentation = "https://docs.rs/ayan-player-cli"
+categories = ["command-line-utilities"]
+
+[[bin]]
+name = "player-cli"
+path = "src/main.rs"
+
+[dependencies]
+colored = "2.2.0"
