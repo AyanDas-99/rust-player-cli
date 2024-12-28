@@ -9,6 +9,7 @@ repository = "https://github.com/AyanDas-99/rust-player-cli"
 keywords = ["cli", "tool", "example"]
 documentation = "https://docs.rs/ayan-player-cli"
 categories = ["command-line-utilities"]
+readme = "readme.md"
 
 [[bin]]
 name = "player-cli"
