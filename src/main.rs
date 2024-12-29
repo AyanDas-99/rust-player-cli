@@ -17,6 +17,8 @@ fn main() {
         }
     });
 
+    println!("Config: {configs:?}");
+
 
     loop {
         let mut files = Vec::new();

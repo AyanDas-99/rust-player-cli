@@ -3,11 +3,13 @@ use std::{
     fmt::Display
 };
 
+use serde::{Deserialize, Serialize};
+
 use crate::config::Configs;
 
 
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum PlayerType {
     MPV,
     VLC,

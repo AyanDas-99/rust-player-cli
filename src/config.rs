@@ -1,6 +1,7 @@
 use colored::Colorize;
 use dirs;
-use std::{self, env, fs, path::PathBuf};
+use serde::{Deserialize, Serialize};
+use std::{self, borrow::Borrow, default, env, fs, path::PathBuf};
 
 use crate::player::{get_player_from_str, PlayerType};
 
@@ -12,7 +13,7 @@ pub enum ConfigError {
     HelpAsked,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Configs {
     volume_lvl: Option<f32>,
     speed: Option<f32>,
@@ -33,7 +34,7 @@ impl Configs {
 
         let mut volume: Option<f32> = None;
         let mut speed: Option<f32> = None;
-        let mut player: PlayerType = PlayerType::Other;
+        let mut player: Option<PlayerType> = None;
         let mut set_as_default = false;
 
         let arg_parsed: Option<ConfigError> = loop {
@@ -72,7 +73,7 @@ impl Configs {
                             Some(v) => v,
                             None => break Some(ConfigError::PlayerTypeMismatch),
                         };
-                        player = get_player_from_str(&player_arg);
+                        player = Some(get_player_from_str(&player_arg));
                     } else if arg == "-set-default" {
                         set_as_default = true;
                     }
@@ -86,46 +87,35 @@ impl Configs {
             None => {}
         }
 
-        if matches!(player, PlayerType::Other) {
-            println!("\n{}: Video player is not specified, so the default player will be used, hence '-s' and '-v' options will not work", "!Warning".bold().yellow());
-            println!(
-                "  {} {}",
-                "·".bold(),
-                "Use '-player' option to specify the player."
-                    .bold()
-                    .yellow()
-            );
-        }
-
-        let config = Configs {
-            volume_lvl: volume,
-            speed,
-            player: player,
+        let config = match Self::get_default_config() {
+            Ok(default) => Configs {
+                volume_lvl: Some(volume.unwrap_or_else(|| default.get_volume())),
+                speed: Some(speed.unwrap_or_else(|| default.get_speed())),
+                player: player.unwrap_or_else(|| default.player),
+            },
+            Err(e) => {
+                match e.kind() {
+                    std::io::ErrorKind::NotFound => (),
+                    _ => {
+                        // TODO: Do something on not able to open read default config
+                    }
+                };
+                Configs {
+                    volume_lvl: volume,
+                    speed,
+                    player: player.unwrap_or_else(|| PlayerType::Other),
+                }
+            }
         };
 
         if set_as_default {
-            _ = config.set_default_config().unwrap_or_else(|e| {
-                println!("Error setting default config: {:?}", e);
-            });
+            _ = config.set_default_config();
         }
 
         Ok(config)
     }
 
-    fn to_json(&self) -> String {
-        format!(
-            r#"{{
-  "volume_lvl": {},
-  "speed": {},
-  "player": "{}"
-}}"#,
-            self.get_volume(),
-            self.get_speed(),
-            self.player
-        )
-    }
-
-    pub fn set_default_config(&self) -> Result<(), std::io::Error> {
+    fn set_default_config(&self) -> Result<(), std::io::Error> {
         let mut user_config_dir = dirs::config_dir()
             .unwrap_or_else(|| PathBuf::from("~/.config"))
             .join("player-cli");
@@ -135,7 +125,19 @@ impl Configs {
         }
 
         user_config_dir = user_config_dir.join("config.json");
-        fs::write(user_config_dir, self.to_json())?;
+        let json = serde_json::to_string(self)?;
+        fs::write(user_config_dir, json)?;
         Ok(())
+    }
+
+    fn get_default_config() -> Result<Self, std::io::Error> {
+        let user_config_file_path = dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("~/.config"))
+            .join("player-cli")
+            .join("config.json");
+
+        let json_string = fs::read_to_string(user_config_file_path)?;
+        let a: Configs = serde_json::from_str(&json_string)?;
+        Ok(a)
     }
 }
