@@ -1,82 +1,9 @@
-use std::{env, ffi::OsStr, fs, io::Error, path::Path};
 use colored::*;
+use std::{ffi::OsStr, fs, io::Error, path::Path};
+pub mod player;
+pub mod config;
 
-#[derive(Debug)]
-pub struct Configs {
-    pub volume_lvl: Option<f32>,
-    pub speed: Option<f32>,
-}
-
-#[derive(Debug)]
-pub enum ConfigError {
-    VolumeTypeMismatch,
-    SpeedTypeMismatch,
-    HelpAsked,
-}
-
-impl Configs {
-    pub fn get_volume(&self) -> f32 {
-        self.volume_lvl.unwrap_or(100.0)
-    }
-
-    pub fn get_speed(&self) -> f32 {
-        self.speed.unwrap_or(1.0)
-    }
-
-    pub fn get_config_from_args(mut args: env::Args) -> Result<Self, ConfigError> {
-        args.next();
-
-        let mut volume: Option<f32> = None;
-        let mut speed: Option<f32> = None;
-
-        let arg_parsed: Option<ConfigError> = loop {
-            let a = args.next();
-            match a {
-                Some(arg) => {
-                    if arg == "-s" {
-                        let speed_arg = args.next();
-                        let speed_arg = match speed_arg {
-                            Some(v) => v,
-                            None => break Some(ConfigError::SpeedTypeMismatch),
-                        };
-                        let b = speed_arg.parse::<f32>();
-                        println!("{:?}", b);
-                        match b {
-                            Ok(val) => speed = Some(val),
-                            Err(_) => break Some(ConfigError::SpeedTypeMismatch),
-                        }
-                    } else if arg == "-v" {
-                        let vol_arg = args.next();
-                        let vol_arg = match vol_arg {
-                            Some(v) => v,
-                            None => break Some(ConfigError::VolumeTypeMismatch),
-                        };
-                        let b = vol_arg.parse::<f32>();
-                        println!("{:?}", b);
-                        match b {
-                            Ok(val) => volume = Some(val),
-                            Err(_) => break Some(ConfigError::VolumeTypeMismatch),
-                        }
-                    } else if arg == "--h" || arg == "-help" {
-                        return Err(ConfigError::HelpAsked);
-                    }
-                }
-                None => break None,
-            }
-        };
-
-        match arg_parsed {
-            Some(er) => return Err(er),
-            None => {}
-        }
-
-        Ok(Configs {
-            volume_lvl: volume,
-            speed,
-        })
-    }
-}
-
+// public functions
 pub fn visit_dirs(dir: &Path, files: &mut Vec<String>) -> Result<(), Error> {
     if dir.is_dir() {
         for entry in fs::read_dir(dir)? {
@@ -101,7 +28,6 @@ pub fn visit_dirs(dir: &Path, files: &mut Vec<String>) -> Result<(), Error> {
     }
     Ok(())
 }
-
 
 pub fn print_help() {
     println!(
@@ -153,4 +79,12 @@ pub fn print_help() {
         "-v 70".yellow(),
         "-s 2".yellow()
     );
+}
+
+pub fn print_file(index: usize, file: &str) {
+    if file.chars().filter(|c| *c == '/').count() > 1 {
+        println!("({}) {}", index.to_string().white(), file.bold().blue());
+    } else {
+        println!("({}) {}", index.to_string().white(), file.bold().white());
+    }
 }

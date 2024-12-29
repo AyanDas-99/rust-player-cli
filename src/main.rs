@@ -1,4 +1,6 @@
-use ayan_player_cli::{visit_dirs, Configs, print_help};
+use ayan_player_cli::player::play;
+use ayan_player_cli::{print_file, print_help, visit_dirs, Configs};
+use std::iter::Skip;
 use std::process::{self, Command};
 use std::{env, io::stdin, path::Path};
 
@@ -17,6 +19,8 @@ fn main() {
 
     loop {
         let mut files = Vec::new();
+
+        // gets files list
         visit_dirs(Path::new("."), &mut files).unwrap_or_else(|e| {
             println!("Problem parsing arguments: {:?}", e);
             process::exit(1);
@@ -28,32 +32,28 @@ fn main() {
         }
         println!("\n");
         for (i, file) in files.iter().enumerate() {
-            println!("{i} {file}");
+            print_file(i, file);
         }
         println!("\n");
 
-        println!("Enter index to play: ");
+        println!("Enter index to play ('q' to quit): ");
         let mut buffer = String::new();
         stdin().read_line(&mut buffer).unwrap_or_else(|e| {
             println!("Error parsing: {e:?}");
             process::exit(1);
         });
 
+        // quit if 'q'
+        if buffer.trim() == "q" {
+            process::exit(1);
+        }
+
         let index_to_play = buffer.trim().parse::<usize>().unwrap_or_else(|e| {
             println!("Error playing: {e:?}");
             process::exit(1);
         });
 
-        let mut c = Command::new("mpv");
-        let file = files.get(index_to_play).unwrap();
-        let result = c
-            .arg(file)
-            .arg(format!("--volume={}", configs.get_volume()))
-            .arg(format!("--speed={}", configs.get_speed()))
-            .output();
-
+        let result = play(&files[index_to_play], &configs);
         println!("{result:?}");
     }
 }
-
-
