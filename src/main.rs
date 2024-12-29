@@ -1,13 +1,13 @@
+use ayan_player_cli::config::*;
 use ayan_player_cli::player::play;
-use ayan_player_cli::{print_file, print_help, visit_dirs, Configs};
-use std::iter::Skip;
-use std::process::{self, Command};
+use ayan_player_cli::{print_file, print_help, visit_dirs};
+use std::process;
 use std::{env, io::stdin, path::Path};
 
 fn main() {
     let args = env::args();
     let configs = Configs::get_config_from_args(args).unwrap_or_else(|e| match e {
-        ayan_player_cli::ConfigError::HelpAsked => {
+        ConfigError::HelpAsked => {
             print_help();
             process::exit(1);
         }
@@ -16,6 +16,7 @@ fn main() {
             process::exit(1);
         }
     });
+
 
     loop {
         let mut files = Vec::new();

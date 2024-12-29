@@ -1,6 +1,6 @@
 use std::{
-    io,
-    process::{Command, Output},
+    io, process::{Command, Output},
+    fmt::Display
 };
 
 use crate::config::Configs;
@@ -13,6 +13,17 @@ pub enum PlayerType {
     VLC,
     Other,
 }
+
+impl Display for PlayerType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", match self {
+            PlayerType::MPV => "mpv",
+            PlayerType::VLC => "vlc",
+            PlayerType::Other => "other",
+        })
+    }
+}
+
 
 impl PlayerType {
     pub fn build_command(&self, file: &str, config: &Configs) -> Command {

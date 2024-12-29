@@ -1,6 +1,6 @@
-use std::env;
-
 use colored::Colorize;
+use dirs;
+use std::{self, env, fs, path::PathBuf};
 
 use crate::player::{get_player_from_str, PlayerType};
 
@@ -34,6 +34,7 @@ impl Configs {
         let mut volume: Option<f32> = None;
         let mut speed: Option<f32> = None;
         let mut player: PlayerType = PlayerType::Other;
+        let mut set_as_default = false;
 
         let arg_parsed: Option<ConfigError> = loop {
             let a = args.next();
@@ -72,6 +73,8 @@ impl Configs {
                             None => break Some(ConfigError::PlayerTypeMismatch),
                         };
                         player = get_player_from_str(&player_arg);
+                    } else if arg == "-set-default" {
+                        set_as_default = true;
                     }
                 }
                 None => break None,
@@ -94,10 +97,45 @@ impl Configs {
             );
         }
 
-        Ok(Configs {
+        let config = Configs {
             volume_lvl: volume,
             speed,
             player: player,
-        })
+        };
+
+        if set_as_default {
+            _ = config.set_default_config().unwrap_or_else(|e| {
+                println!("Error setting default config: {:?}", e);
+            });
+        }
+
+        Ok(config)
+    }
+
+    fn to_json(&self) -> String {
+        format!(
+            r#"{{
+  "volume_lvl": {},
+  "speed": {},
+  "player": "{}"
+}}"#,
+            self.get_volume(),
+            self.get_speed(),
+            self.player
+        )
+    }
+
+    pub fn set_default_config(&self) -> Result<(), std::io::Error> {
+        let mut user_config_dir = dirs::config_dir()
+            .unwrap_or_else(|| PathBuf::from("~/.config"))
+            .join("player-cli");
+
+        if !user_config_dir.exists() {
+            fs::create_dir(&user_config_dir)?;
+        }
+
+        user_config_dir = user_config_dir.join("config.json");
+        fs::write(user_config_dir, self.to_json())?;
+        Ok(())
     }
 }
