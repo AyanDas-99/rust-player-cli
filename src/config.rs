@@ -1,15 +1,14 @@
-use colored::Colorize;
+use crate::player::{get_player_from_str, PlayerType};
 use dirs;
 use serde::{Deserialize, Serialize};
-use std::{self, borrow::Borrow, default, env, fs, path::PathBuf};
-
-use crate::player::{get_player_from_str, PlayerType};
+use std::{self, env, fs, path::PathBuf};
 
 #[derive(Debug)]
 pub enum ConfigError {
     VolumeTypeMismatch,
     SpeedTypeMismatch,
     PlayerTypeMismatch,
+    FilterTypeMismatch,
     HelpAsked,
 }
 
@@ -18,6 +17,7 @@ pub struct Configs {
     volume_lvl: Option<f32>,
     speed: Option<f32>,
     pub player: PlayerType,
+    pub filter: Option<String>,
 }
 
 impl Configs {
@@ -29,12 +29,14 @@ impl Configs {
         self.speed.unwrap_or(1.0)
     }
 
+
     pub fn get_config_from_args(mut args: env::Args) -> Result<Self, ConfigError> {
         args.next();
 
         let mut volume: Option<f32> = None;
         let mut speed: Option<f32> = None;
         let mut player: Option<PlayerType> = None;
+        let mut filter: Option<String> = None;
         let mut set_as_default = false;
 
         let arg_parsed: Option<ConfigError> = loop {
@@ -74,7 +76,13 @@ impl Configs {
                             None => break Some(ConfigError::PlayerTypeMismatch),
                         };
                         player = Some(get_player_from_str(&player_arg));
-                    } else if arg == "-set-default" {
+                    } else if arg == "-f" {
+                        let filter_arg = args.next();
+                        filter = match filter_arg {
+                            Some(v) => Some(v),
+                            None => break Some(ConfigError::FilterTypeMismatch),
+                        };
+                    } else if arg == "--set-default" {
                         set_as_default = true;
                     }
                 }
@@ -92,6 +100,7 @@ impl Configs {
                 volume_lvl: Some(volume.unwrap_or_else(|| default.get_volume())),
                 speed: Some(speed.unwrap_or_else(|| default.get_speed())),
                 player: player.unwrap_or_else(|| default.player),
+                filter 
             },
             Err(e) => {
                 match e.kind() {
@@ -104,6 +113,7 @@ impl Configs {
                     volume_lvl: volume,
                     speed,
                     player: player.unwrap_or_else(|| PlayerType::Other),
+                    filter 
                 }
             }
         };

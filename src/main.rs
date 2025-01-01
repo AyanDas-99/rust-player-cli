@@ -1,6 +1,6 @@
-use ayan_player_cli::config::*;
-use ayan_player_cli::player::play;
-use ayan_player_cli::{print_file, print_help, visit_dirs};
+use ayan_player_cli::{
+    count_slashes, player::play, print_files, print_help, visit_dirs, ConfigError, Configs,
+};
 use std::process;
 use std::{env, io::stdin, path::Path};
 
@@ -19,12 +19,11 @@ fn main() {
 
     println!("Config: {configs:?}");
 
-
     loop {
         let mut files = Vec::new();
 
         // gets files list
-        visit_dirs(Path::new("."), &mut files).unwrap_or_else(|e| {
+        visit_dirs(Path::new("."), &mut files, &configs).unwrap_or_else(|e| {
             println!("Problem parsing arguments: {:?}", e);
             process::exit(1);
         });
@@ -33,10 +32,15 @@ fn main() {
             println!("No video found in directory");
             process::exit(1);
         }
+
+        // sort files based on subfolder count
+        files.sort_by(|a, b| count_slashes(&a).cmp(&count_slashes(&b)));
+
         println!("\n");
-        for (i, file) in files.iter().enumerate() {
-            print_file(i, file);
-        }
+
+        // print all the files
+        print_files(&files);
+
         println!("\n");
 
         println!("Enter index to play ('q' to quit): ");

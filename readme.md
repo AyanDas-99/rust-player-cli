@@ -5,6 +5,8 @@ A simple CLI tool to play videos from the current directory.
 ## Features
 - Play videos with ease from the terminal.
 - Adjust playback volume and speed using options.
+- Set default options
+- Filter with extension
 
 ## Installation
 Clone the repository and build the tool using `cargo`:
